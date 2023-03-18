@@ -1,23 +1,30 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-contract SunRaise {
+import "./SolarToken.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SunRaise is Ownable{
 
 
     event Deposit();
     event Launch();
     event Contribute();
 
+    SolarToken public token;
+
     uint public balance;
-    uint public owner;
+    
+    address private deployer;
     uint public count;
 
     struct Campaign {
         address creator;
         uint goal;
-        uint Total;
+        uint total;
         uint32 startAt;
         uint32 endAt;
-        bool clained;
+        bool claimed;
         
     }
 
@@ -27,7 +34,8 @@ contract SunRaise {
 
 
     constructor() {
-        owner=msg.sender;
+        deployer=msg.sender;
+        token = new SolarToken(100000000);
     }
 
     receive() external payable{
@@ -39,77 +47,80 @@ contract SunRaise {
         _;
     }
 
-    function launch(uint _goal,uint32 _startAt,uint32 _endAt)external{
-        require(goal>=1 ether,"");
+    function launch(uint _goal,uint32 _startAt,uint32 _endAt)external onlyOwner{
+        require(_goal>=1 ether,"");
         require(_startAt>block.timestamp,"start at < now");
         require(_endAt<=_startAt+ 100 days,"end at > max duration (100 days)");
         require(_endAt>_startAt,"end at < start at");
 
         count++;
-        campaigns[count]=Campaign=({
-            creator:_msg;sender,
+        campaigns[count]=Campaign({
+            creator:msg.sender,
             goal:_goal,
-            Total:0
+            total:0,
             startAt:_startAt,
             endAt:_endAt,
             claimed:false
-        })
-        // Cette fonction permet au propriétaire du contrat de crowdfunding de clôturer le projet et de distribuer
-        // les jetons ou les participations en fonction des contributions des contributeurs.
+        });
     }
 
-    function getBalance()internal view returns (uint) {
+    function getBalance()internal view onlyOwner returns (uint) {
         return address(this).balance;
     }
 
-    function contribute(
-        uint _id,
-        uint _amount)external {
+    function contribute(uint _id)external payable {
 
             address sender= msg.sender;
-            uint balance = getBalance();
-            Campaign storage campaign = campaign[_id];
-            require(campaigns[_id].startAt>=block.timestamp,"not started");
-            require(campaigns[_id].endAt<=block.timestamp,"ended");
+            uint _amount = msg.value;
+            uint _balance = getBalance();
+            uint currentDate = block.timestamp;
+            Campaign storage campaign = campaigns[_id];
+
+            require(campaign.startAt>=currentDate,"not started");
+            require(campaign.endAt<=currentDate,"ended");
             require(_amount>1 ether, "");
             contributors[sender]= _amount;
 
-            (bool success,) = msg.sender.call{value : _amount}("");
+            (bool success,) = sender.call{value : _amount}("");
             require(success,"Tx failed");
+            token.transfer(sender,_amount * 100);
             campaign.total+=_amount;
-            assert(balance+_amount==getBalance());
+            assert(_balance+_amount==getBalance());
     }
 
-    function getContributorBalance() external view returns(uint){
+    function getContributorBalance() external view  returns(uint){
         return contributors[msg.sender];
     }
 
     function refund() external{
         address _sender = msg.sender;
-        uint _amount = contributors[_sender]._amount;
+        uint _amount = contributors[_sender];
         require(_amount>0,"");   
         (bool success,) = _sender.call{value : _amount}("");
         require(success,"Tx failed");
+        token.transfer(deployer,_amount * 100);
     
     }
 
-    function finalize() external{}
 
-    function withdraw(address _to) external isAddress(_to){
+    function finalize(address _to) external onlyOwner isAddress(_to){
         (bool success,) = _to.call{value : address(this).balance}("");
         require(success,"Tx failed");
     }
 
     function setOwner(address _newOwner)external isAddress(_newOwner){
-        owner = _newOwner;
+        deployer = _newOwner;
     
     }
 
-    /**
-     * setDeadline: Cette fonction permet de définir une date limite pour la collecte de fonds.
+    function getContributorToken() external view returns(uint){
+        address _sender = msg.sender; 
+        return token.balanceOf(_sender);
+    }
 
-setGoal: Cette fonction permet de définir l'objectif de financement pour le projet.
+    function getTotalToken() external view onlyOwner returns(uint){
+        return token.totalSupply();
+    }
 
-getGoal: Cette fonction permet de vérifier l'objectif de financement défini pour le projet.
-     */
+  
 }

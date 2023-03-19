@@ -64,6 +64,28 @@ contract SunRaise is Ownable{
         });
     }
 
+    function getCampaigns() external view returns (Campaign [] memory){
+        
+        Campaign [] memory _campaigns;
+        for (uint i = 1; i <= count; i++) {
+            
+            _campaigns[i] = campaigns[i];
+       }
+
+       return _campaigns;
+    }
+
+     function getCampaign(uint _id) external view returns (Campaign [] memory){
+        
+        Campaign [] memory _campaigns;
+        for (uint i = 1; i <= count; i++) {
+            
+            _campaigns[i] = campaigns[_id];
+       }
+
+       return _campaigns;
+    }
+
     function getBalance()internal view onlyOwner returns (uint) {
         return address(this).balance;
     }
@@ -116,6 +138,11 @@ contract SunRaise is Ownable{
     function getContributorToken() external view returns(uint){
         address _sender = msg.sender; 
         return token.balanceOf(_sender);
+    }
+
+    function getAccountBalance() external view returns(uint){
+        address _sender = msg.sender; 
+        return address(_sender).balance;
     }
 
     function getTotalToken() external view onlyOwner returns(uint){

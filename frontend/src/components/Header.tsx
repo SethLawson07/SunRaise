@@ -2,11 +2,8 @@ import { useState } from 'react';
 import {Container,Nav,Button,Modal,Navbar} from 'react-bootstrap';
 import Formulaire from './Formulaire';
 
-function Header() {
+function Header({show,handleShow}:any) {
 
-    const [show, setShow] = useState(false);
-    const handleShow = () => setShow(true);
-    const handleClose = () => setShow(false);
 
     const [showForm, setShowForm] = useState(false);
     const handleShowForm = () => setShowForm(true);

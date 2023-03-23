@@ -2,11 +2,9 @@ import { useState } from 'react';
 import {Button,ProgressBar,Card,Container,Row,Col} from 'react-bootstrap';
 import img1 from '../assets/images/img1.jpg'
 
-function Campaign() {
+function Campaign({show,handleShow}:any) {
     const now = 70;
-    const [show, setShow] = useState(false);
-    const handleShow = () => setShow(true);
-    const handleClose = () => setShow(false);
+    
   return (
     <Container>
     <Row className="justify-content-center">
@@ -20,7 +18,9 @@ function Campaign() {
             </Card.Text>
             <br />
             <ProgressBar now={now} label={`${now}%`} variant="secondary" animated /><br />
-            {!show && <Button variant="outline-warning">Support this project</Button>}
+            {show ? <Button variant="outline-warning">Support this project</Button> :
+              <Button disabled variant="outline-warning">Support this project</Button>
+            }
           </Card.Body>
         </Card>
       </Col>

@@ -23,12 +23,9 @@ export default function Formulaire() {
         event.preventDefault();
         event.stopPropagation();
       }
-
       
       setValidated(true);
-      
-      
-  
+
     };
 
 

@@ -8,20 +8,21 @@ import Campaign from './components/Card'
 
 function App() {
   const [count, setCount] = useState(0)
-  const [show, setShow] = useState(false);
 
-  const handleClose = () => setShow(false);
+  
+  const [show, setShow] = useState(false);
   const handleShow = () => setShow(true);
+  const handleClose = () => setShow(false);
 
   return (
     <>
-      <Header /><br />
+      <Header show={show} handleShow={handleShow} /><br />
       <Container>
       
       <Row>
-        <Col>  <Campaign/></Col>
-        <Col>  <Campaign/></Col>
-        <Col>  <Campaign/></Col>
+        <Col>  <Campaign show={show} handleShow={handleShow}/></Col>
+        <Col>  <Campaign show={show} handleShow={handleShow}/></Col>
+        <Col>  <Campaign show={show} handleShow={handleShow}/></Col>
       </Row>
     </Container>
 

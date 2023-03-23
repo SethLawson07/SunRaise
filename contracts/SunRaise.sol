@@ -7,9 +7,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract SunRaise is Ownable{
 
 
-    event Deposit();
-    event Launch();
-    event Contribute();
+    event Deposit(address sender,uint value);
+    event Launch(address creator,string name,uint goal,uint entAt);
+    event Contribute(uint idCampaign,address sender,uint value);
+    event Refund(uint idCampaign,address sender,uint value);
 
     SolarToken public token;
 
@@ -19,27 +20,31 @@ contract SunRaise is Ownable{
     uint public count;
 
     struct Campaign {
-        address creator;
+        
+        string name;
+        string description;
         uint goal;
         uint total;
-        uint32 startAt;
-        uint32 endAt;
+        uint startAt;
+        uint endAt;
         bool claimed;
+        address creator;
+        
         
     }
 
     mapping (uint => Campaign) campaigns;
-    mapping (address => uint) contributors;
-
+    mapping (address => mapping (uint => uint)) contributors;
 
 
     constructor() {
         deployer=msg.sender;
         token = new SolarToken(100000000);
+       
     }
 
     receive() external payable{
-
+         emit Deposit(msg.sender, msg.value);
     }
 
     modifier isAddress(address _address) {
@@ -47,21 +52,27 @@ contract SunRaise is Ownable{
         _;
     }
 
-    function launch(uint _goal,uint32 _startAt,uint32 _endAt)external onlyOwner{
+    function launch(string memory _name,uint _goal,string memory _description)external onlyOwner{
+        address _creator = msg.sender;
+        uint _startAt = block.timestamp;
+        uint _endAt = _startAt + 100 days;
+
         require(_goal>=1 ether,"");
-        require(_startAt>block.timestamp,"start at < now");
-        require(_endAt<=_startAt+ 100 days,"end at > max duration (100 days)");
-        require(_endAt>_startAt,"end at < start at");
 
         count++;
         campaigns[count]=Campaign({
-            creator:msg.sender,
+            name:_name,
+            description:_description,
             goal:_goal,
             total:0,
             startAt:_startAt,
             endAt:_endAt,
-            claimed:false
+            claimed:false,
+            creator:_creator
+            
         });
+
+        emit Launch(_creator,_name,_goal,_endAt);
     }
 
     function getCampaigns() external view returns (Campaign [] memory){
@@ -92,35 +103,37 @@ contract SunRaise is Ownable{
 
     function contribute(uint _id)external payable {
 
-            address sender= msg.sender;
+            address _sender= msg.sender;
             uint _amount = msg.value;
             uint _balance = getBalance();
             uint currentDate = block.timestamp;
             Campaign storage campaign = campaigns[_id];
 
-            require(campaign.startAt>=currentDate,"not started");
             require(campaign.endAt<=currentDate,"ended");
             require(_amount>1 ether, "");
-            contributors[sender]= _amount;
+            contributors[_sender][_id]= _amount;
 
-            (bool success,) = sender.call{value : _amount}("");
+            (bool success,) = _sender.call{value : _amount}("");
             require(success,"Tx failed");
-            token.transfer(sender,_amount * 100);
+            token.transfer(_sender,_amount * 100);
             campaign.total+=_amount;
             assert(_balance+_amount==getBalance());
+
+            emit Contribute(_id, _sender,_amount);
     }
 
-    function getContributorBalance() external view  returns(uint){
-        return contributors[msg.sender];
+    function getContributorBalance(uint _id) external view  returns(uint){
+        return contributors[msg.sender][_id];
     }
 
-    function refund() external{
+    function refund(uint _id) external{
         address _sender = msg.sender;
-        uint _amount = contributors[_sender];
+        uint _amount = contributors[_sender][_id];
         require(_amount>0,"");   
         (bool success,) = _sender.call{value : _amount}("");
         require(success,"Tx failed");
         token.transfer(deployer,_amount * 100);
+        emit Refund(_id,_sender,_amount);
     
     }
 

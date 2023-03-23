@@ -73,6 +73,7 @@ contract SunRaise is Ownable{
         });
 
         emit Launch(_creator,_name,_goal,_endAt);
+        
     }
 
     function getCampaigns() external view returns (Campaign [] memory){

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
+
 import "./SolarToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -16,7 +18,7 @@ contract SunRaise is Ownable{
 
     uint public balance;
     
-    address private deployer;
+    address public deployer;
     uint public count;
 
     struct Campaign {
@@ -71,55 +73,53 @@ contract SunRaise is Ownable{
             creator:_creator
             
         });
+        
 
         emit Launch(_creator,_name,_goal,_endAt);
         
     }
 
-    function getCampaigns() external view returns (Campaign [] memory){
-        
-        Campaign [] memory _campaigns;
-        for (uint i = 1; i <= count; i++) {
-            
-            _campaigns[i] = campaigns[i];
-       }
-
-       return _campaigns;
+    function getCampaigns() external view returns (Campaign[] memory) {
+    Campaign[] memory _campaigns = new Campaign[](count);
+    for (uint i = 1; i <= count; i++) {
+        _campaigns[i-1] = campaigns[i];
     }
+    return _campaigns;
+}
 
-     function getCampaign(uint _id) external view returns (Campaign [] memory){
-        
-        Campaign [] memory _campaigns;
-        for (uint i = 1; i <= count; i++) {
-            
-            _campaigns[i] = campaigns[_id];
-       }
-
-       return _campaigns;
+     function getCampaign(uint _id) external view returns (Campaign[] memory) {
+    Campaign[] memory _campaigns = new Campaign[](count);
+    for (uint i = 1; i <= count; i++) {
+        _campaigns[i-1] = campaigns[_id];
     }
+    return _campaigns;
+}
+    
+  
 
-    function getBalance()internal view onlyOwner returns (uint) {
-        return address(this).balance;
+    function getBalance(uint _id)public view returns (uint) {
+        Campaign storage campaign = campaigns[_id];
+        return campaign.total;
     }
 
     function contribute(uint _id)external payable {
-
+            uint _amount = msg.value/1 ether;
             address _sender= msg.sender;
-            uint _amount = msg.value;
-            uint _balance = getBalance();
+            uint _balance = getBalance(_id);
             uint currentDate = block.timestamp;
             Campaign storage campaign = campaigns[_id];
 
-            require(campaign.endAt<=currentDate,"ended");
-            require(_amount>1 ether, "");
+
+            require(currentDate<=campaign.endAt,"ended");
+            require(_amount>1 , "oklm");
             contributors[_sender][_id]= _amount;
 
-            (bool success,) = _sender.call{value : _amount}("");
-            require(success,"Tx failed");
+            
             token.transfer(_sender,_amount * 100);
             campaign.total+=_amount;
-            assert(_balance+_amount==getBalance());
-
+            assert(_balance+_amount==getBalance(_id));
+        
+           
             emit Contribute(_id, _sender,_amount);
     }
 
@@ -128,13 +128,18 @@ contract SunRaise is Ownable{
     }
 
     function refund(uint _id) external{
+        Campaign storage campaign = campaigns[_id];
         address _sender = msg.sender;
         uint _amount = contributors[_sender][_id];
-        require(_amount>0,"");   
+        require(_amount>0,""); 
+        campaign.total -= _amount;  
+
         (bool success,) = _sender.call{value : _amount}("");
         require(success,"Tx failed");
         token.transfer(deployer,_amount * 100);
         emit Refund(_id,_sender,_amount);
+
+        delete contributors[_sender][_id];
     
     }
 
@@ -144,7 +149,7 @@ contract SunRaise is Ownable{
         require(success,"Tx failed");
     }
 
-    function setOwner(address _newOwner)external isAddress(_newOwner){
+    function setOwner(address _newOwner)external onlyOwner isAddress(_newOwner){
         deployer = _newOwner;
     
     }
@@ -156,7 +161,7 @@ contract SunRaise is Ownable{
 
     function getAccountBalance() external view returns(uint){
         address _sender = msg.sender; 
-        return address(_sender).balance;
+        return address(_sender).balance/1 ether;
     }
 
     function getTotalToken() external view onlyOwner returns(uint){

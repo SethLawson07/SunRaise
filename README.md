@@ -1,13 +1,3 @@
-# Sample Hardhat Project
+# SunRaise
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
-
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+It's a smart crowdfunding deal that allows you to fund solar energy projects in exchange for a token.
